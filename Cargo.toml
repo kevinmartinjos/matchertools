@@ -1,0 +1,7 @@
+[package]
+name = "matchertools"
+version = "0.1.0"
+authors = ["kevin"]
+edition = "2018"
+
+[dependencies]
