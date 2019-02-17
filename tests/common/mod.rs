@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use matchertools;
 
-pub fn assert_stable_engagement(men_preferences: &HashMap<u32, Vec<u32>>, women_preferences: &HashMap<u32, Vec<u32>>, engaged_man_woman: &HashMap<u32, i32>) {
+pub fn assert_stable_engagement(men_preferences: &HashMap<u32, Vec<u32>>, women_preferences: &HashMap<u32, Vec<u32>>, engaged_man_woman: &HashMap<u32, u32>) {
     // TODO: Write a unit test to make sure that this util method is working as expected :p
 
     // For the marriages to be stable, we need the following conditions:
@@ -13,7 +13,7 @@ pub fn assert_stable_engagement(men_preferences: &HashMap<u32, Vec<u32>>, women_
     assert_all_men_are_engaged(&engaged_man_woman, &men_preferences);
 
     // Checking if there's a possibility to cheat.
-    for (man, preferences) in men_preferences {
+    for (man, _preferences) in men_preferences {
         let woman_engaged_to = engaged_man_woman.get(&man);
         let women_who_rejected_this_man = get_women_who_rejected_this_man(*man, *woman_engaged_to.unwrap(), &men_preferences);
 
@@ -24,16 +24,16 @@ pub fn assert_stable_engagement(men_preferences: &HashMap<u32, Vec<u32>>, women_
     }
 }
 
-fn assert_all_men_are_engaged(engaged_man_woman: &HashMap<u32, i32>, men_preferences: &HashMap<u32, Vec<u32>>) {
+fn assert_all_men_are_engaged(engaged_man_woman: &HashMap<u32, u32>, men_preferences: &HashMap<u32, Vec<u32>>) {
     for (man, _preferences) in men_preferences {
         let woman_engaged_to = engaged_man_woman.get(&man);
-        assert_ne!(woman_engaged_to, Some(&-1));
+        assert!(!woman_engaged_to.is_none());
     }
 }
 
-fn get_currently_engaged_man_for_woman(woman: u32, engaged_man_woman: &HashMap<u32, i32>) -> u32 {
+fn get_currently_engaged_man_for_woman(woman: u32, engaged_man_woman: &HashMap<u32, u32>) -> u32 {
     for (man, engaged_woman) in engaged_man_woman {
-        if *engaged_woman == woman as i32{
+        if *engaged_woman == woman {
             return *man;
         }
     }
@@ -41,12 +41,12 @@ fn get_currently_engaged_man_for_woman(woman: u32, engaged_man_woman: &HashMap<u
     panic!("A woman is not engaged!");
 }
 
-fn get_women_who_rejected_this_man(man: u32, woman_engaged_to: i32, men_preferences: &HashMap<u32, Vec<u32>>) -> Vec<u32> {
+fn get_women_who_rejected_this_man(man: u32, woman_engaged_to: u32, men_preferences: &HashMap<u32, Vec<u32>>) -> Vec<u32> {
     let ranked_women: Vec<u32> = men_preferences.get(&man).unwrap().to_vec();
     let mut women_who_rejected: Vec<u32> = Vec::new();
 
     for woman in ranked_women {
-        if woman as i32 == woman_engaged_to {
+        if woman == woman_engaged_to {
             return women_who_rejected;
         }
         women_who_rejected.push(woman);

@@ -16,8 +16,8 @@ fn test_simple_case() {
 
 	let engaged_man_woman = matchertools::gale_shapley(&mut men_preferences, &mut women_preferences);
 
-	assert_eq!(engaged_man_woman.get(&0), Some(&(1 as i32)));
-	assert_eq!(engaged_man_woman.get(&1), Some(&(0 as i32)));
+	assert_eq!(engaged_man_woman.get(&0), Some(&1));
+	assert_eq!(engaged_man_woman.get(&1), Some(&0));
 
 	common::assert_stable_engagement(&men_preferences, &women_preferences, &engaged_man_woman);
 }
@@ -40,11 +40,11 @@ fn test_moderate_case() {
 
 	let engaged_man_woman = matchertools::gale_shapley(&mut men_preferences, &mut women_preferences);
 
-	assert_eq!(engaged_man_woman.get(&0), Some(&(0 as i32)));
-	assert_eq!(engaged_man_woman.get(&1), Some(&(3 as i32)));
-	assert_eq!(engaged_man_woman.get(&2), Some(&(1 as i32)));
-	assert_eq!(engaged_man_woman.get(&3), Some(&(2 as i32)));
-	assert_eq!(engaged_man_woman.get(&4), Some(&(4 as i32)));
+	assert_eq!(engaged_man_woman.get(&0), Some(&0));
+	assert_eq!(engaged_man_woman.get(&1), Some(&3));
+	assert_eq!(engaged_man_woman.get(&2), Some(&1));
+	assert_eq!(engaged_man_woman.get(&3), Some(&2));
+	assert_eq!(engaged_man_woman.get(&4), Some(&4));
 
 	common::assert_stable_engagement(&men_preferences, &women_preferences, &engaged_man_woman);
 }
