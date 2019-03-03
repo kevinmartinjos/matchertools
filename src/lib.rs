@@ -1,8 +1,70 @@
+use std::cmp::Eq;
 use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
+
+pub fn gale_shapley<'a, T>(
+    input_men_preferences: &'a HashMap<T, Vec<T>>,
+    input_women_preferences: &'a HashMap<T, Vec<T>>,
+) -> HashMap<&'a T, &'a T>
+where
+    T: Eq + Hash,
+{
+    let mut men_preferences: HashMap<u32, Vec<u32>> = HashMap::new();
+    let mut women_preferences: HashMap<u32, Vec<u32>> = HashMap::new();
+    let mut engagements: HashMap<&T, &T> = HashMap::new();
+    let mut men_reference_to_u32: HashMap<&T, u32> = HashMap::new();
+    let mut women_reference_to_u32: HashMap<&T, u32> = HashMap::new();
+
+    for (idx, man) in input_men_preferences.keys().enumerate() {
+        men_reference_to_u32.insert(man, idx as u32);
+    }
+
+    for (idx, woman) in input_women_preferences.keys().enumerate() {
+        women_reference_to_u32.insert(woman, idx as u32);
+    }
+
+    // We need to preserve the order
+    for (man, women) in input_men_preferences.iter() {
+        let mut women_as_u32: Vec<u32> = Vec::new();
+        for woman in women {
+            women_as_u32.push(*women_reference_to_u32.get(woman).unwrap());
+        }
+        men_preferences.insert(*men_reference_to_u32.get(man).unwrap(), women_as_u32);
+    }
+
+    for (woman, men) in input_women_preferences.iter() {
+        let mut men_as_u32: Vec<u32> = Vec::new();
+        for man in men {
+            men_as_u32.push(*men_reference_to_u32.get(man).unwrap());
+        }
+        women_preferences.insert(*women_reference_to_u32.get(woman).unwrap(), men_as_u32);
+    }
+
+    let engagements_u32 = gale_shapley_internal(&men_preferences, &women_preferences);
+
+    for (man_u32, woman_u32) in engagements_u32 {
+        let man = get_reference_from_u32(&men_reference_to_u32, man_u32).unwrap();
+        let woman = get_reference_from_u32(&women_reference_to_u32, woman_u32).unwrap();
+        engagements.insert(man, woman);
+    }
+
+    return engagements;
+
+}
+
+fn get_reference_from_u32<'a, T>(references: &HashMap<&'a T, u32>, value: u32) -> Option<&'a T> where T: Eq + Hash {
+    for (reference, val_u32) in references {
+        if *val_u32 == value {
+            return Some(reference)
+        }
+    }
+
+    return None
+}
 
 // TODO: Add a public method that would accept hashmap of strings instead of u32
 // TODO: Or should we accept any hashmap of the form <T, Vec<T>> ?
-pub fn gale_shapley(
+fn gale_shapley_internal(
     men_preferences: &HashMap<u32, Vec<u32>>,
     women_preferences: &HashMap<u32, Vec<u32>>,
 ) -> HashMap<u32, u32> {
