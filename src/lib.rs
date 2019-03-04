@@ -3,8 +3,8 @@ use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
 pub fn gale_shapley<'a, T>(
-    input_men_preferences: &'a HashMap<T, Vec<T>>,
-    input_women_preferences: &'a HashMap<T, Vec<T>>,
+    input_men_preferences: &'a HashMap<&T, Vec<&T>>,
+    input_women_preferences: &'a HashMap<&T, Vec<&T>>,
 ) -> HashMap<&'a T, &'a T>
 where
     T: Eq + Hash,
@@ -64,7 +64,7 @@ fn get_reference_from_u32<'a, T>(references: &HashMap<&'a T, u32>, value: u32) -
 
 // TODO: Add a public method that would accept hashmap of strings instead of u32
 // TODO: Or should we accept any hashmap of the form <T, Vec<T>> ?
-fn gale_shapley_internal(
+pub fn gale_shapley_internal(
     men_preferences: &HashMap<u32, Vec<u32>>,
     women_preferences: &HashMap<u32, Vec<u32>>,
 ) -> HashMap<u32, u32> {
