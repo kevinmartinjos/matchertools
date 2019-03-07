@@ -2,6 +2,7 @@
 
 ### matchertools
 
+Hosted as a [crate](https://crates.io/crates/matchertools) on crates.io
 Exposes an API for the following:
 
 1. The Gale-Shapley algorithm (stable marriages problem)
