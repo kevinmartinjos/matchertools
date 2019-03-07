@@ -3,5 +3,6 @@ name = "matchertools"
 version = "0.1.0"
 authors = ["kevin"]
 edition = "2018"
-
+homepage = "https://github.com/lonesword/matchertools"
+repository = "https://github.com/lonesword/matchertools"
 [dependencies]
