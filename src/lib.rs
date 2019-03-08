@@ -91,17 +91,19 @@ where
     }
 
     return engagements;
-
 }
 
-fn get_reference_from_u32<'a, T>(references: &HashMap<&'a T, u32>, value: u32) -> Option<&'a T> where T: Eq + Hash {
+fn get_reference_from_u32<'a, T>(references: &HashMap<&'a T, u32>, value: u32) -> Option<&'a T>
+where
+    T: Eq + Hash,
+{
     for (reference, val_u32) in references {
         if *val_u32 == value {
-            return Some(reference)
+            return Some(reference);
         }
     }
 
-    return None
+    return None;
 }
 
 fn gale_shapley_internal(
@@ -111,7 +113,6 @@ fn gale_shapley_internal(
     /// You better go read the algorithm on wikipedia: https://en.wikipedia.org/wiki/Stable_marriage_problem
     // ranks are indexed from zero
     // TODO: Add validations for input
-
     let mut men_preferences = men_preferences.clone();
     let mut engaged_man_woman: HashMap<u32, u32> = HashMap::new();
 
@@ -190,7 +191,6 @@ fn accept_or_reject_proposals(
 ) {
     /// Tentatively accepts proposals. The rejections are permanent. The `engaged_man_woman` HashMap represents an unstable engagement. It suddenly
     /// becomes 'stable' (go read about gale-shapley to understand what stable means) in the final round, when everyone is engaged to someone
-
     for (woman, interested_men) in proposals {
         let best_interested_man =
             get_best_man_from_men_interested_in_a_woman(woman, women_preferences, &interested_men);
@@ -262,7 +262,6 @@ fn get_rank(preferences: &HashMap<u32, Vec<u32>>, preferences_of: &u32, item: &u
 
 fn get_currently_engaged_man(engaged_man_woman: &HashMap<u32, u32>, woman: &u32) -> Option<u32> {
     /// Returns the man a woman is currently engaged to
-
     for (man, engaged_woman) in engaged_man_woman {
         if *engaged_woman == *woman {
             return Some(*man);
@@ -373,13 +372,15 @@ mod tests {
         let woman: u32 = 1; // The second woman
         let interested_men: HashSet<u32> = vec![0, 1, 2, 3, 4].into_iter().collect();
 
-        let best_man = get_best_man_from_men_interested_in_a_woman(woman, &women_preferences, &interested_men);
+        let best_man =
+            get_best_man_from_men_interested_in_a_woman(woman, &women_preferences, &interested_men);
         assert_eq!(best_man, 1);
 
         let woman: u32 = 2;
         let interested_men: HashSet<u32> = vec![0, 1, 2, 3, 4].into_iter().collect();
 
-        let best_man = get_best_man_from_men_interested_in_a_woman(woman, &women_preferences, &interested_men);
+        let best_man =
+            get_best_man_from_men_interested_in_a_woman(woman, &women_preferences, &interested_men);
         assert_eq!(best_man, 2);
     }
 

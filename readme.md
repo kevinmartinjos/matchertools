@@ -30,7 +30,7 @@ Exposes an API for the following:
 
     ```
 
-2. <Yet to be implemented - stable roommates problem, stable residency problem)
+2. <Yet to be implemented - stable roommates problem, stable residency problem>
 
 ### License
 
