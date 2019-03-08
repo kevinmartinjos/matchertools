@@ -2,8 +2,6 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use matchertools;
 
-mod common;
-
 #[test]
 fn test_simple_case() {
     let mut men_preferences = HashMap::new();
@@ -20,7 +18,6 @@ fn test_simple_case() {
     assert_eq!(engaged_man_woman.get(&&0), Some(&&1));
     assert_eq!(engaged_man_woman.get(&&1), Some(&&0));
 
-//    common::assert_stable_engagement(&men_preferences, &women_preferences, &engaged_man_woman);
 }
 
 #[test]
@@ -38,12 +35,32 @@ fn test_simple_case_string() {
     women_preferences.insert(&cleopatra, vec![&julius, &vercingetorix]);
     women_preferences.insert(&boudica, vec![&vercingetorix, &julius]);
 
-    // TODO: Remove the mutable reference
     let engaged_man_woman =
         matchertools::gale_shapley(&men_preferences, &women_preferences);
 
     assert_eq!(engaged_man_woman.get(&&julius), Some(&&cleopatra));
     assert_eq!(engaged_man_woman.get(&&vercingetorix), Some(&&boudica));
+}
+
+#[test]
+fn test_simple_case_string_2() {
+    let mut men_preferences= HashMap::new();
+    let mut women_preferences = HashMap::new();
+
+    men_preferences.insert(&"julius", vec![&"cleopatra", &"boudica", &"nefertiti"]);
+    men_preferences.insert(&"antony", vec![&"cleopatra", &"nefertiti", &"boudica"]);
+    men_preferences.insert(&"vercingetorix", vec![&"boudica", &"nefertiti", &"cleopatra"]);
+
+    women_preferences.insert(&"cleopatra", vec![&"julius", &"antony", &"vercingetorix"]);
+    women_preferences.insert(&"boudica", vec![&"vercingetorix", &"antony", &"julius"]);
+    women_preferences.insert(&"nefertiti", vec![&"julius", &"vercingetorix", &"antony"]);
+
+    let engaged_man_woman =
+        matchertools::gale_shapley(&men_preferences, &women_preferences);
+
+    assert_eq!(engaged_man_woman.get(&&"julius"), Some(&&"cleopatra"));
+    assert_eq!(engaged_man_woman.get(&&"antony"), Some(&&"nefertiti"));
+    assert_eq!(engaged_man_woman.get(&&"vercingetorix"), Some(&&"boudica"));
 }
 
 #[test]
@@ -71,5 +88,4 @@ fn test_moderate_case() {
     assert_eq!(engaged_man_woman.get(&&3), Some(&&2));
     assert_eq!(engaged_man_woman.get(&&4), Some(&&4));
 
-//    common::assert_stable_engagement(&men_preferences, &women_preferences, &engaged_man_woman);
 }

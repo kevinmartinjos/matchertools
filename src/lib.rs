@@ -2,6 +2,44 @@ use std::cmp::Eq;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
+/**
+    Returns a HashMap indicating who is engaged to whom using the Gale-Shapley algorithm
+
+    I use the terms 'man' and 'women' here because it helps me relate to the words used in the
+    original stable marriage problem.
+
+    # Remarks:
+    The number of men and women should be equal. In other words, `input_men_preferences` and `input_women_preferences` should have the
+    same number of keys. Also, each 'man' in `input_men_preferences` should indicate the 'ranking' of each woman in the associated vec.
+    Same holds true for women - man: each woman in `input_women_preferences` should indicate her preference in the associated vec.
+
+    # Arguments:
+    * input_men_preferences - HashMap of each men to a vec of women, ordered by preference. The most preferred woman comes first in the vec
+    * input_women_preferences - HashMap of each woman to a vec of men, ordered by preference. The most preferred man comes first in the vec
+
+    # Returns:
+    A Hashmap<T, T> which maps each man to a woman. This mapping will be stable.
+
+    # Examples
+    ```
+    use std::collections::{HashMap};
+    let mut men_preferences= HashMap::new();
+    let mut women_preferences = HashMap::new();
+
+    men_preferences.insert(&"julius", vec![&"cleopatra", &"boudica"]);
+    men_preferences.insert(&"vercingetorix", vec![&"boudica", &"cleopatra"]);
+
+    women_preferences.insert(&"cleopatra", vec![&"julius", &"vercingetorix"]);
+    women_preferences.insert(&"boudica", vec![&"vercingetorix", &"julius"]);
+
+    // TODO: Remove the mutable reference
+    let engaged_man_woman =
+        matchertools::gale_shapley(&men_preferences, &women_preferences);
+
+    assert_eq!(engaged_man_woman.get(&&"julius"), Some(&&"cleopatra"));
+    assert_eq!(engaged_man_woman.get(&&"vercingetorix"), Some(&&"boudica"));
+    ```
+*/
 pub fn gale_shapley<'a, T>(
     input_men_preferences: &'a HashMap<&T, Vec<&T>>,
     input_women_preferences: &'a HashMap<&T, Vec<&T>>,
@@ -9,12 +47,15 @@ pub fn gale_shapley<'a, T>(
 where
     T: Eq + Hash,
 {
+    // TODO: Add validations for the input
     let mut men_preferences: HashMap<u32, Vec<u32>> = HashMap::new();
     let mut women_preferences: HashMap<u32, Vec<u32>> = HashMap::new();
     let mut engagements: HashMap<&T, &T> = HashMap::new();
     let mut men_reference_to_u32: HashMap<&T, u32> = HashMap::new();
     let mut women_reference_to_u32: HashMap<&T, u32> = HashMap::new();
 
+    // I initially implemented the algorithm over u32. So I'm now trying to convert HashMap<T, Vec<T>> to HashMap<u32, Vec<u32>>.
+    // TODO: Get rid of this step. Rewrite the implementation to directly work on generic types
     for (idx, man) in input_men_preferences.keys().enumerate() {
         men_reference_to_u32.insert(man, idx as u32);
     }
@@ -23,7 +64,6 @@ where
         women_reference_to_u32.insert(woman, idx as u32);
     }
 
-    // We need to preserve the order
     for (man, women) in input_men_preferences.iter() {
         let mut women_as_u32: Vec<u32> = Vec::new();
         for woman in women {
@@ -40,8 +80,10 @@ where
         women_preferences.insert(*women_reference_to_u32.get(woman).unwrap(), men_as_u32);
     }
 
+    // men_preferences and women_preferences is HashMap<u32, Vec<u32>>
     let engagements_u32 = gale_shapley_internal(&men_preferences, &women_preferences);
 
+    // convert the resulting HashMap<u32, u32> to HashMap<T, Vec<T>>
     for (man_u32, woman_u32) in engagements_u32 {
         let man = get_reference_from_u32(&men_reference_to_u32, man_u32).unwrap();
         let woman = get_reference_from_u32(&women_reference_to_u32, woman_u32).unwrap();
@@ -62,12 +104,11 @@ fn get_reference_from_u32<'a, T>(references: &HashMap<&'a T, u32>, value: u32) -
     return None
 }
 
-// TODO: Add a public method that would accept hashmap of strings instead of u32
-// TODO: Or should we accept any hashmap of the form <T, Vec<T>> ?
-pub fn gale_shapley_internal(
+fn gale_shapley_internal(
     men_preferences: &HashMap<u32, Vec<u32>>,
     women_preferences: &HashMap<u32, Vec<u32>>,
 ) -> HashMap<u32, u32> {
+    /// You better go read the algorithm on wikipedia: https://en.wikipedia.org/wiki/Stable_marriage_problem
     // ranks are indexed from zero
     // TODO: Add validations for input
 
@@ -147,9 +188,12 @@ fn accept_or_reject_proposals(
     engaged_man_woman: &mut HashMap<u32, u32>,
     proposals: HashMap<u32, HashSet<u32>>,
 ) {
+    /// Tentatively accepts proposals. The rejections are permanent. The `engaged_man_woman` HashMap represents an unstable engagement. It suddenly
+    /// becomes 'stable' (go read about gale-shapley to understand what stable means) in the final round, when everyone is engaged to someone
+
     for (woman, interested_men) in proposals {
         let best_interested_man =
-            get_best_man_from_interested_men(woman, women_preferences, &interested_men);
+            get_best_man_from_men_interested_in_a_woman(woman, women_preferences, &interested_men);
         let man_currently_engaged_to = get_currently_engaged_man(&engaged_man_woman, &woman);
 
         if man_currently_engaged_to.is_none() {
@@ -175,7 +219,7 @@ fn accept_or_reject_proposals(
     }
 }
 
-fn get_best_man_from_interested_men(
+fn get_best_man_from_men_interested_in_a_woman(
     woman: u32,
     women_preferences: &HashMap<u32, Vec<u32>>,
     interested_men: &HashSet<u32>,
@@ -200,13 +244,12 @@ fn get_best_man_from_interested_men(
     return best_man;
 }
 
-pub fn get_rank(preferences: &HashMap<u32, Vec<u32>>, key: &u32, value: &u32) -> Option<u32> {
-    //TODO: Rename 'key' and 'value' to something better
-    let rankings = preferences.get(key);
+fn get_rank(preferences: &HashMap<u32, Vec<u32>>, preferences_of: &u32, item: &u32) -> Option<u32> {
+    let rankings = preferences.get(preferences_of);
     match rankings {
         Some(rankings) => {
             for (rank, value_at_rank) in rankings.iter().enumerate() {
-                if value_at_rank == value {
+                if value_at_rank == item {
                     return Some(rank as u32);
                 }
             }
@@ -218,6 +261,8 @@ pub fn get_rank(preferences: &HashMap<u32, Vec<u32>>, key: &u32, value: &u32) ->
 }
 
 fn get_currently_engaged_man(engaged_man_woman: &HashMap<u32, u32>, woman: &u32) -> Option<u32> {
+    /// Returns the man a woman is currently engaged to
+
     for (man, engaged_woman) in engaged_man_woman {
         if *engaged_woman == *woman {
             return Some(*man);
@@ -328,13 +373,13 @@ mod tests {
         let woman: u32 = 1; // The second woman
         let interested_men: HashSet<u32> = vec![0, 1, 2, 3, 4].into_iter().collect();
 
-        let best_man = get_best_man_from_interested_men(woman, &women_preferences, &interested_men);
+        let best_man = get_best_man_from_men_interested_in_a_woman(woman, &women_preferences, &interested_men);
         assert_eq!(best_man, 1);
 
         let woman: u32 = 2;
         let interested_men: HashSet<u32> = vec![0, 1, 2, 3, 4].into_iter().collect();
 
-        let best_man = get_best_man_from_interested_men(woman, &women_preferences, &interested_men);
+        let best_man = get_best_man_from_men_interested_in_a_woman(woman, &women_preferences, &interested_men);
         assert_eq!(best_man, 2);
     }
 

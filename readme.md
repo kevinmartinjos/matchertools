@@ -5,7 +5,32 @@
 Hosted as a [crate](https://crates.io/crates/matchertools) on crates.io
 Exposes an API for the following:
 
-1. The Gale-Shapley algorithm (stable marriages problem)
+1. The Gale-Shapley algorithm ([stable marriages problem](https://en.wikipedia.org/wiki/Stable_marriage_problem))
+
+    #### Usage
+
+    ```rust
+    extern crate matchertools;
+
+    fn main() {
+        let mut men_preferences= HashMap::new();
+        let mut women_preferences = HashMap::new();
+
+        men_preferences.insert(&"julius", vec![&"cleopatra", &"boudica", &"nefertiti"]);
+        men_preferences.insert(&"antony", vec![&"cleopatra", &"nefertiti", &"boudica"]);
+        men_preferences.insert(&"vercingetorix", vec![&"boudica", &"nefertiti", &"cleopatra"]);
+
+        women_preferences.insert(&"cleopatra", vec![&"julius", &"antony", &"vercingetorix"]);
+        women_preferences.insert(&"boudica", vec![&"vercingetorix", &"antony", &"julius"]);
+        women_preferences.insert(&"nefertiti", vec![&"julius", &"vercingetorix", &"antony"]);
+
+        let engaged_man_woman =
+                matchertools::gale_shapley(&men_preferences, &women_preferences);
+    }
+
+    ```
+
+2. <Yet to be implemented - stable roommates problem, stable residency problem)
 
 ### License
 
