@@ -161,11 +161,12 @@ fn create_proposals(
 
     for man in unengaged_men {
         let preferred_woman = men_preferences.get(&man).unwrap()[0];
-        if let Some(proposals_for_this_woman) = proposals.get_mut(&preferred_woman) {
-            proposals_for_this_woman.insert(man);
-        } else {
-            proposals.insert(preferred_woman, [man].into_iter().collect());
-        }
+        proposals
+            .entry(preferred_woman)
+            .and_modify(|proposals| {
+                proposals.insert(man);
+            })
+            .or_insert_with(|| [man].into_iter().collect());
     }
 
     proposals
@@ -180,10 +181,10 @@ fn accept_or_reject_proposals(
 ) {
     for (woman, interested_men) in proposals {
         let best_interested_man =
-            get_best_man_from_men_interested_in_a_woman(woman, women_preferences, &interested_men);
-        let man_currently_engaged_to = get_currently_engaged_man(engaged_man_woman, &woman);
-
-        if let Some(man_currently_engaged_to) = man_currently_engaged_to {
+            get_best_man_from_men_interested_in_a_woman(woman, women_preferences, &interested_men)
+                .unwrap();
+        if let Some(man_currently_engaged_to) = get_currently_engaged_man(engaged_man_woman, &woman)
+        {
             let rank_best_interested_man =
                 get_rank(women_preferences, &woman, &best_interested_man).unwrap();
             let rank_currently_engaged_man =
@@ -196,33 +197,34 @@ fn accept_or_reject_proposals(
             make_engagement(engaged_man_woman, best_interested_man, woman);
         }
 
-        for man in &interested_men {
+        for man in interested_men.iter() {
             men_preferences.get_mut(man).unwrap().remove(0);
         }
     }
 }
-///TODO: We do not need the entire women_preferences here. Just the preferences of 'woman' would suffice
+/// TODO: We do not need the entire women_preferences here. Just the preferences of 'woman' would suffice
+///
+/// return None if Could not find best man from a set of interested men!
 fn get_best_man_from_men_interested_in_a_woman(
     woman: u32,
     women_preferences: &HashMap<u32, Vec<u32>>,
     interested_men: &HashSet<u32>,
-) -> u32 {
-    let men_rankings = women_preferences.get(&woman).unwrap();
-    let best_man = men_rankings.iter().find(|man| interested_men.contains(man));
-    if let Some(best_man) = best_man {
-        best_man.to_owned()
-    } else {
-        panic!("Could not find best man from a set of interested men!");
-    }
+) -> Option<u32> {
+    women_preferences
+        .get(&woman)
+        .unwrap()
+        .iter()
+        .find(|man| interested_men.contains(man))
+        .copied()
 }
 
 fn get_rank(preferences: &HashMap<u32, Vec<u32>>, preferences_of: &u32, item: &u32) -> Option<u32> {
-    if let Some(rankings) = preferences.get(preferences_of) {
-        let rank = rankings.iter().position(|&x| x == *item);
-        rank.map(|rank| rank as u32)
-    } else {
-        None
-    }
+    preferences
+        .get(preferences_of)
+        .as_ref()?
+        .iter()
+        .position(|&v| v == *item)
+        .map(|rank| rank as u32)
 }
 
 /// Returns the man a woman is currently engaged to
@@ -336,14 +338,14 @@ mod tests {
 
         let best_man =
             get_best_man_from_men_interested_in_a_woman(woman, &women_preferences, &interested_men);
-        assert_eq!(best_man, 1);
+        assert_eq!(best_man, Some(1));
 
         let woman: u32 = 2;
         let interested_men: HashSet<u32> = [0, 1, 2, 3, 4].into_iter().collect();
 
         let best_man =
             get_best_man_from_men_interested_in_a_woman(woman, &women_preferences, &interested_men);
-        assert_eq!(best_man, 2);
+        assert_eq!(best_man, Some(2));
     }
 
     #[test]
