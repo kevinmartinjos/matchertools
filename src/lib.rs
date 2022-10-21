@@ -26,46 +26,47 @@ use std::hash::Hash;
     let mut men_preferences= HashMap::new();
     let mut women_preferences = HashMap::new();
 
-    men_preferences.insert(&"julius", vec![&"cleopatra", &"boudica"]);
-    men_preferences.insert(&"vercingetorix", vec![&"boudica", &"cleopatra"]);
+    men_preferences.insert("julius", vec!["cleopatra", "boudica"]);
+    men_preferences.insert("vercingetorix", vec!["boudica", "cleopatra"]);
 
-    women_preferences.insert(&"cleopatra", vec![&"julius", &"vercingetorix"]);
-    women_preferences.insert(&"boudica", vec![&"vercingetorix", &"julius"]);
+    women_preferences.insert("cleopatra", vec!["julius", "vercingetorix"]);
+    women_preferences.insert("boudica", vec!["vercingetorix", "julius"]);
 
-    // TODO: Remove the mutable reference
     let engaged_man_woman =
         matchertools::gale_shapley(&men_preferences, &women_preferences);
 
-    assert_eq!(engaged_man_woman.get(&&"julius"), Some(&&"cleopatra"));
-    assert_eq!(engaged_man_woman.get(&&"vercingetorix"), Some(&&"boudica"));
+    assert_eq!(engaged_man_woman.get("julius"), Some(&"cleopatra"));
+    assert_eq!(engaged_man_woman.get("vercingetorix"), Some(&"boudica"));
     ```
 */
-pub fn gale_shapley<'a, T>(
-    input_men_preferences: &'a HashMap<&T, Vec<&T>>,
-    input_women_preferences: &'a HashMap<&T, Vec<&T>>,
-) -> HashMap<&'a T, &'a T>
+pub fn gale_shapley<T>(
+    input_men_preferences: &HashMap<T, Vec<T>>,
+    input_women_preferences: &HashMap<T, Vec<T>>,
+) -> HashMap<T, T>
 where
-    T: Eq + Hash,
+    T: Eq + Hash + Clone + Copy,
 {
     // TODO: Add validations for the input
-    let mut men_preferences: HashMap<u32, Vec<u32>> = HashMap::new();
-    let mut women_preferences: HashMap<u32, Vec<u32>> = HashMap::new();
-    let mut engagements: HashMap<&T, &T> = HashMap::new();
-    let mut men_reference_to_u32: HashMap<&T, u32> = HashMap::new();
-    let mut women_reference_to_u32: HashMap<&T, u32> = HashMap::new();
+    let mut men_preferences = HashMap::new();
+    let mut women_preferences = HashMap::new();
+    let mut engagements = HashMap::new();
 
     // I initially implemented the algorithm over u32. So I'm now trying to convert HashMap<T, Vec<T>> to HashMap<u32, Vec<u32>>.
     // TODO: Get rid of this step. Rewrite the implementation to directly work on generic types
-    for (idx, man) in input_men_preferences.keys().enumerate() {
-        men_reference_to_u32.insert(man, idx as u32);
-    }
+    let men_reference_to_u32: HashMap<_, _> = input_men_preferences
+        .keys()
+        .enumerate()
+        .map(|(idx, man)| (*man, idx as u32))
+        .collect();
 
-    for (idx, woman) in input_women_preferences.keys().enumerate() {
-        women_reference_to_u32.insert(woman, idx as u32);
-    }
+    let women_reference_to_u32: HashMap<_, _> = input_women_preferences
+        .keys()
+        .enumerate()
+        .map(|(idx, woman)| (*woman, idx as u32))
+        .collect();
 
     for (man, women) in input_men_preferences.iter() {
-        let women_as_u32: Vec<u32> = women
+        let women_as_u32 = women
             .iter()
             .map(|woman| *women_reference_to_u32.get(woman).unwrap())
             .collect();
@@ -73,7 +74,7 @@ where
     }
 
     for (woman, men) in input_women_preferences.iter() {
-        let men_as_u32: Vec<u32> = men
+        let men_as_u32 = men
             .iter()
             .map(|man| *men_reference_to_u32.get(man).unwrap())
             .collect();
@@ -93,9 +94,9 @@ where
     engagements
 }
 
-fn get_reference_from_u32<'a, T>(references: &HashMap<&'a T, u32>, value: u32) -> Option<&'a T>
+fn get_reference_from_u32<T>(references: &HashMap<T, u32>, value: u32) -> Option<T>
 where
-    T: Eq + Hash,
+    T: Eq + Hash + Clone + Copy,
 {
     references
         .iter()
