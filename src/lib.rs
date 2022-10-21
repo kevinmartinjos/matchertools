@@ -65,18 +65,18 @@ where
     }
 
     for (man, women) in input_men_preferences.iter() {
-        let mut women_as_u32: Vec<u32> = Vec::new();
-        for woman in women {
-            women_as_u32.push(*women_reference_to_u32.get(woman).unwrap());
-        }
+        let women_as_u32: Vec<u32> = women
+            .iter()
+            .map(|woman| *women_reference_to_u32.get(woman).unwrap())
+            .collect();
         men_preferences.insert(*men_reference_to_u32.get(man).unwrap(), women_as_u32);
     }
 
     for (woman, men) in input_women_preferences.iter() {
-        let mut men_as_u32: Vec<u32> = Vec::new();
-        for man in men {
-            men_as_u32.push(*men_reference_to_u32.get(man).unwrap());
-        }
+        let men_as_u32: Vec<u32> = men
+            .iter()
+            .map(|man| *men_reference_to_u32.get(man).unwrap())
+            .collect();
         women_preferences.insert(*women_reference_to_u32.get(woman).unwrap(), men_as_u32);
     }
 
@@ -90,59 +90,53 @@ where
         engagements.insert(man, woman);
     }
 
-    return engagements;
+    engagements
 }
 
 fn get_reference_from_u32<'a, T>(references: &HashMap<&'a T, u32>, value: u32) -> Option<&'a T>
 where
     T: Eq + Hash,
 {
-    for (reference, val_u32) in references {
-        if *val_u32 == value {
-            return Some(reference);
-        }
-    }
-
-    return None;
+    references
+        .iter()
+        .find(|(_, &v)| v == value)
+        .map(|(k, _)| *k)
 }
-
+/// You better go read the algorithm on wikipedia: https://en.wikipedia.org/wiki/Stable_marriage_problem
+/// ranks are indexed from zero
+/// TODO: Add validations for input
 fn gale_shapley_internal(
     men_preferences: &HashMap<u32, Vec<u32>>,
     women_preferences: &HashMap<u32, Vec<u32>>,
 ) -> HashMap<u32, u32> {
-    /// You better go read the algorithm on wikipedia: https://en.wikipedia.org/wiki/Stable_marriage_problem
-    // ranks are indexed from zero
-    // TODO: Add validations for input
     let mut men_preferences = men_preferences.clone();
     let mut engaged_man_woman: HashMap<u32, u32> = HashMap::new();
 
-    while get_unengaged_men(&men_preferences, &engaged_man_woman).len() != 0 {
+    while !get_unengaged_men(&men_preferences, &engaged_man_woman).is_empty() {
         play_round(
             &mut men_preferences,
-            &women_preferences,
+            women_preferences,
             &mut engaged_man_woman,
         );
     }
 
-    return engaged_man_woman;
+    engaged_man_woman
 }
-
+/// 1. Find all un-engaged men
+/// 2. Propose to the highest ranked woman
+/// 3. For each woman, reject/engage all proposals
+/// 4. update engaged_man_woman
 fn play_round(
-    mut men_preferences: &mut HashMap<u32, Vec<u32>>,
+    men_preferences: &mut HashMap<u32, Vec<u32>>,
     women_preferences: &HashMap<u32, Vec<u32>>,
     engaged_man_woman: &mut HashMap<u32, u32>,
 ) {
-    // 1. Find all un-engaged men
-    // 2. Propose to the highest ranked woman
-    // 3. For each woman, reject/engage all proposals
-    // 4. update engaged_man_woman
+    let unengaged_men = get_unengaged_men(men_preferences, engaged_man_woman);
 
-    let unengaged_men = get_unengaged_men(&men_preferences, &engaged_man_woman);
-
-    let proposals = create_proposals(&men_preferences, unengaged_men);
+    let proposals = create_proposals(men_preferences, unengaged_men);
     accept_or_reject_proposals(
-        &mut men_preferences,
-        &women_preferences,
+        men_preferences,
+        women_preferences,
         engaged_man_woman,
         proposals,
     );
@@ -152,16 +146,11 @@ fn get_unengaged_men(
     men_preferences: &HashMap<u32, Vec<u32>>,
     engaged_man_woman: &HashMap<u32, u32>,
 ) -> HashSet<u32> {
-    //TODO: Use functional programming style filters here
-    let mut unengaged_men: HashSet<u32> = HashSet::new();
-    for (man, _preferences) in men_preferences {
-        let engaged_woman = engaged_man_woman.get(&man);
-        if engaged_woman.is_none() {
-            unengaged_men.insert(*man);
-        }
-    }
-
-    return unengaged_men;
+    men_preferences
+        .keys()
+        .filter(|man| engaged_man_woman.get(man).is_none())
+        .cloned()
+        .collect()
 }
 
 fn create_proposals(
@@ -172,45 +161,39 @@ fn create_proposals(
 
     for man in unengaged_men {
         let preferred_woman = men_preferences.get(&man).unwrap()[0];
-        let proposals_for_this_woman = proposals.get_mut(&preferred_woman);
-        if proposals_for_this_woman.is_none() {
-            proposals.insert(preferred_woman, [man].iter().cloned().collect());
+        if let Some(proposals_for_this_woman) = proposals.get_mut(&preferred_woman) {
+            proposals_for_this_woman.insert(man);
         } else {
-            proposals_for_this_woman.unwrap().insert(man);
+            proposals.insert(preferred_woman, [man].into_iter().collect());
         }
     }
 
-    return proposals;
+    proposals
 }
-
+/// Tentatively accepts proposals. The rejections are permanent. The `engaged_man_woman` HashMap represents an unstable engagement. It suddenly
+/// becomes 'stable' (go read about gale-shapley to understand what stable means) in the final round, when everyone is engaged to someone
 fn accept_or_reject_proposals(
     men_preferences: &mut HashMap<u32, Vec<u32>>,
     women_preferences: &HashMap<u32, Vec<u32>>,
     engaged_man_woman: &mut HashMap<u32, u32>,
     proposals: HashMap<u32, HashSet<u32>>,
 ) {
-    /// Tentatively accepts proposals. The rejections are permanent. The `engaged_man_woman` HashMap represents an unstable engagement. It suddenly
-    /// becomes 'stable' (go read about gale-shapley to understand what stable means) in the final round, when everyone is engaged to someone
     for (woman, interested_men) in proposals {
         let best_interested_man =
             get_best_man_from_men_interested_in_a_woman(woman, women_preferences, &interested_men);
-        let man_currently_engaged_to = get_currently_engaged_man(&engaged_man_woman, &woman);
+        let man_currently_engaged_to = get_currently_engaged_man(engaged_man_woman, &woman);
 
-        if man_currently_engaged_to.is_none() {
-            make_engagement(engaged_man_woman, best_interested_man, woman);
-        } else {
+        if let Some(man_currently_engaged_to) = man_currently_engaged_to {
             let rank_best_interested_man =
-                get_rank(&women_preferences, &woman, &best_interested_man).unwrap();
-            let rank_currently_engaged_man = get_rank(
-                women_preferences,
-                &woman,
-                &man_currently_engaged_to.unwrap(),
-            )
-            .unwrap();
+                get_rank(women_preferences, &woman, &best_interested_man).unwrap();
+            let rank_currently_engaged_man =
+                get_rank(women_preferences, &woman, &man_currently_engaged_to).unwrap();
             if rank_best_interested_man < rank_currently_engaged_man {
-                break_engagement(engaged_man_woman, man_currently_engaged_to.unwrap());
+                break_engagement(engaged_man_woman, man_currently_engaged_to);
                 make_engagement(engaged_man_woman, best_interested_man, woman);
             }
+        } else {
+            make_engagement(engaged_man_woman, best_interested_man, woman);
         }
 
         for man in &interested_men {
@@ -218,57 +201,36 @@ fn accept_or_reject_proposals(
         }
     }
 }
-
+///TODO: We do not need the entire women_preferences here. Just the preferences of 'woman' would suffice
 fn get_best_man_from_men_interested_in_a_woman(
     woman: u32,
     women_preferences: &HashMap<u32, Vec<u32>>,
     interested_men: &HashSet<u32>,
 ) -> u32 {
-    //TODO: We do not need the entire women_preferences here. Just the preferences of 'woman' would suffice
     let men_rankings = women_preferences.get(&woman).unwrap();
-    let mut best_man = 0; // TODO: Get rid of this ugly initialization
-    let mut found = false;
-
-    for man in men_rankings {
-        if interested_men.contains(man) {
-            best_man = *man;
-            found = true;
-            break;
-        }
-    }
-
-    if !found {
+    let best_man = men_rankings.iter().find(|man| interested_men.contains(man));
+    if let Some(best_man) = best_man {
+        best_man.to_owned()
+    } else {
         panic!("Could not find best man from a set of interested men!");
     }
-
-    return best_man;
 }
 
 fn get_rank(preferences: &HashMap<u32, Vec<u32>>, preferences_of: &u32, item: &u32) -> Option<u32> {
-    let rankings = preferences.get(preferences_of);
-    match rankings {
-        Some(rankings) => {
-            for (rank, value_at_rank) in rankings.iter().enumerate() {
-                if value_at_rank == item {
-                    return Some(rank as u32);
-                }
-            }
-
-            return None;
-        }
-        None => return None,
+    if let Some(rankings) = preferences.get(preferences_of) {
+        let rank = rankings.iter().position(|&x| x == *item);
+        rank.map(|rank| rank as u32)
+    } else {
+        None
     }
 }
 
+/// Returns the man a woman is currently engaged to
 fn get_currently_engaged_man(engaged_man_woman: &HashMap<u32, u32>, woman: &u32) -> Option<u32> {
-    /// Returns the man a woman is currently engaged to
-    for (man, engaged_woman) in engaged_man_woman {
-        if *engaged_woman == *woman {
-            return Some(*man);
-        }
-    }
-
-    return None;
+    engaged_man_woman
+        .iter()
+        .find(|(_, engaged_woman)| engaged_woman == &woman)
+        .map(|(man, _)| man.to_owned())
 }
 
 fn make_engagement(engaged_man_woman: &mut HashMap<u32, u32>, man: u32, woman: u32) {
@@ -293,7 +255,7 @@ mod tests {
         preferences.insert(3, vec![2, 4, 3, 0, 1]);
         preferences.insert(4, vec![4, 0, 1, 3, 2]);
 
-        return preferences;
+        preferences
     }
 
     fn get_preferences_config_2() -> HashMap<u32, Vec<u32>> {
@@ -304,7 +266,7 @@ mod tests {
         preferences.insert(3, vec![0, 4, 3, 1, 2]);
         preferences.insert(4, vec![3, 0, 2, 4, 1]);
 
-        return preferences;
+        preferences
     }
 
     #[test]
@@ -330,7 +292,7 @@ mod tests {
     #[test]
     fn test_create_proposals_base_case() {
         // Testing the base case, i.e create proposals in the first round when no man is engaged to a woman
-        let unengaged_men: HashSet<u32> = [0, 1, 2, 3, 4].iter().cloned().collect();
+        let unengaged_men: HashSet<u32> = [0, 1, 2, 3, 4].into_iter().collect();
 
         let mut men_preferences = HashMap::new();
         men_preferences.insert(0, vec![0, 1, 2, 3, 4]);
@@ -346,7 +308,7 @@ mod tests {
         women_preferences.insert(3, vec![0, 1, 2, 3, 4]);
         women_preferences.insert(4, vec![0, 1, 2, 3, 4]);
 
-        let proposals = create_proposals(&mut men_preferences, unengaged_men);
+        let proposals = create_proposals(&men_preferences, unengaged_men);
 
         assert_eq!(
             proposals.get(&0),
@@ -358,8 +320,8 @@ mod tests {
     fn test_create_proposals_base_case_with_better_preferences() {
         // Testing the base case, i.e create proposals in the first round when no man is engaged to a woman
         let unengaged_men: HashSet<u32> = [0, 1, 2, 3, 4].iter().cloned().collect();
-        let mut men_preferences = get_preferences_config_1();
-        let proposals = create_proposals(&mut men_preferences, unengaged_men);
+        let men_preferences = get_preferences_config_1();
+        let proposals = create_proposals(&men_preferences, unengaged_men);
 
         assert_eq!(proposals.get(&0), Some(&vec![0, 2].into_iter().collect()));
         assert_eq!(proposals.get(&2), Some(&vec![3].into_iter().collect()));
@@ -370,14 +332,14 @@ mod tests {
     fn test_get_best_man_from_interested_men() {
         let women_preferences = get_preferences_config_2();
         let woman: u32 = 1; // The second woman
-        let interested_men: HashSet<u32> = vec![0, 1, 2, 3, 4].into_iter().collect();
+        let interested_men: HashSet<u32> = [0, 1, 2, 3, 4].into_iter().collect();
 
         let best_man =
             get_best_man_from_men_interested_in_a_woman(woman, &women_preferences, &interested_men);
         assert_eq!(best_man, 1);
 
         let woman: u32 = 2;
-        let interested_men: HashSet<u32> = vec![0, 1, 2, 3, 4].into_iter().collect();
+        let interested_men: HashSet<u32> = [0, 1, 2, 3, 4].into_iter().collect();
 
         let best_man =
             get_best_man_from_men_interested_in_a_woman(woman, &women_preferences, &interested_men);
@@ -457,7 +419,7 @@ mod tests {
 
         // Another round. Men 1 & 2
         let unengaged_men = get_unengaged_men(&men_preferences, &engaged_man_woman);
-        let proposals = create_proposals(&mut men_preferences, unengaged_men);
+        let proposals = create_proposals(&men_preferences, unengaged_men);
         println!("proposals: {:?}", proposals);
         // proposals would be
         // 1 - {2}
