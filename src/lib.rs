@@ -258,84 +258,81 @@ mod tests {
     // const sample_size = 5;
 
     fn get_preferences_config_1() -> HashMap<usize, Vec<usize>> {
-        let mut preferences = HashMap::new();
-        preferences.insert(0, vec![0, 1, 2, 3, 4]);
-        preferences.insert(1, vec![4, 3, 2, 1, 0]);
-        preferences.insert(2, vec![0, 1, 4, 2, 3]);
-        preferences.insert(3, vec![2, 4, 3, 0, 1]);
-        preferences.insert(4, vec![4, 0, 1, 3, 2]);
-
-        preferences
+        HashMap::from([
+            (0, vec![0, 1, 2, 3, 4]),
+            (1, vec![4, 3, 2, 1, 0]),
+            (2, vec![0, 1, 4, 2, 3]),
+            (3, vec![2, 4, 3, 0, 1]),
+            (4, vec![4, 0, 1, 3, 2]),
+        ])
     }
 
     fn get_preferences_config_2() -> HashMap<usize, Vec<usize>> {
-        let mut preferences = HashMap::new();
-        preferences.insert(0, vec![0, 1, 2, 3, 4]);
-        preferences.insert(1, vec![1, 2, 4, 3, 0]);
-        preferences.insert(2, vec![2, 4, 1, 0, 3]);
-        preferences.insert(3, vec![0, 4, 3, 1, 2]);
-        preferences.insert(4, vec![3, 0, 2, 4, 1]);
-
-        preferences
+        HashMap::from([
+            (0, vec![0, 1, 2, 3, 4]),
+            (1, vec![1, 2, 4, 3, 0]),
+            (2, vec![2, 4, 1, 0, 3]),
+            (3, vec![0, 4, 3, 1, 2]),
+            (4, vec![3, 0, 2, 4, 1]),
+        ])
     }
 
     #[test]
     fn test_get_unengaged_men() {
         let men_preferences = get_preferences_config_1();
-        let mut engaged_man_woman = HashMap::new();
-        engaged_man_woman.insert(0, 0);
-        engaged_man_woman.insert(1, 1);
-        engaged_man_woman.insert(2, 2);
+        let mut engaged_man_woman = HashMap::from([(0, 0), (1, 1), (2, 2)]);
 
         let unengaged_men = get_unengaged_men(&men_preferences, &engaged_man_woman);
-        assert_eq!(unengaged_men, vec![3, 4].into_iter().collect());
+        assert_eq!(unengaged_men, [3, 4].into_iter().collect());
 
         engaged_man_woman.insert(3, 3);
         let unengaged_men = get_unengaged_men(&men_preferences, &engaged_man_woman);
-        assert_eq!(unengaged_men, vec![4].into_iter().collect());
+        assert_eq!(unengaged_men, [4].into_iter().collect());
 
         engaged_man_woman.insert(4, 4);
         let unengaged_men = get_unengaged_men(&men_preferences, &engaged_man_woman);
-        assert_eq!(unengaged_men, vec![].into_iter().collect());
+        assert_eq!(unengaged_men, [].into_iter().collect());
     }
 
     #[test]
     fn test_create_proposals_base_case() {
         // Testing the base case, i.e create proposals in the first round when no man is engaged to a woman
-        let unengaged_men: HashSet<usize> = [0, 1, 2, 3, 4].into_iter().collect();
+        let unengaged_men = [0, 1, 2, 3, 4].into_iter().collect();
 
-        let mut men_preferences = HashMap::new();
-        men_preferences.insert(0, vec![0, 1, 2, 3, 4]);
-        men_preferences.insert(1, vec![0, 1, 2, 3, 4]);
-        men_preferences.insert(2, vec![0, 1, 2, 3, 4]);
-        men_preferences.insert(3, vec![0, 1, 2, 3, 4]);
-        men_preferences.insert(4, vec![0, 1, 2, 3, 4]);
+        let men_preferences = HashMap::from([
+            (0, vec![0, 1, 2, 3, 4]),
+            (1, vec![0, 1, 2, 3, 4]),
+            (2, vec![0, 1, 2, 3, 4]),
+            (3, vec![0, 1, 2, 3, 4]),
+            (4, vec![0, 1, 2, 3, 4]),
+        ]);
 
-        let mut women_preferences = HashMap::new();
-        women_preferences.insert(0, vec![0, 1, 2, 3, 4]);
-        women_preferences.insert(1, vec![0, 1, 2, 3, 4]);
-        women_preferences.insert(2, vec![0, 1, 2, 3, 4]);
-        women_preferences.insert(3, vec![0, 1, 2, 3, 4]);
-        women_preferences.insert(4, vec![0, 1, 2, 3, 4]);
+        let women_preferences = HashMap::from([
+            (0, vec![0, 1, 2, 3, 4]),
+            (1, vec![0, 1, 2, 3, 4]),
+            (2, vec![0, 1, 2, 3, 4]),
+            (3, vec![0, 1, 2, 3, 4]),
+            (4, vec![0, 1, 2, 3, 4]),
+        ]);
 
         let proposals = create_proposals(&men_preferences, unengaged_men);
 
         assert_eq!(
             proposals.get(&0),
-            Some(&vec![0, 1, 2, 3, 4].into_iter().collect())
+            Some(&[0, 1, 2, 3, 4].into_iter().collect())
         );
     }
 
     #[test]
     fn test_create_proposals_base_case_with_better_preferences() {
         // Testing the base case, i.e create proposals in the first round when no man is engaged to a woman
-        let unengaged_men: HashSet<usize> = [0, 1, 2, 3, 4].iter().cloned().collect();
+        let unengaged_men = [0, 1, 2, 3, 4].into_iter().collect();
         let men_preferences = get_preferences_config_1();
         let proposals = create_proposals(&men_preferences, unengaged_men);
 
-        assert_eq!(proposals.get(&0), Some(&vec![0, 2].into_iter().collect()));
-        assert_eq!(proposals.get(&2), Some(&vec![3].into_iter().collect()));
-        assert_eq!(proposals.get(&4), Some(&vec![1, 4].into_iter().collect()));
+        assert_eq!(proposals.get(&0), Some(&[0, 2].into_iter().collect()));
+        assert_eq!(proposals.get(&2), Some(&[3].into_iter().collect()));
+        assert_eq!(proposals.get(&4), Some(&[1, 4].into_iter().collect()));
     }
 
     #[test]
@@ -372,10 +369,7 @@ mod tests {
 
     #[test]
     fn test_get_currently_engaged_man() {
-        let mut engaged_man_woman: HashMap<usize, usize> = HashMap::new();
-
-        engaged_man_woman.insert(0, 0);
-        engaged_man_woman.insert(2, 4);
+        let engaged_man_woman = HashMap::from([(0, 0), (2, 4)]);
 
         let engaged_man = get_currently_engaged_man(&engaged_man_woman, &0);
         assert_eq!(engaged_man, Some(0));
@@ -389,9 +383,7 @@ mod tests {
 
     #[test]
     fn test_make_engagement() {
-        let mut engaged_man_woman: HashMap<usize, usize> = HashMap::new();
-        engaged_man_woman.insert(0, 0);
-        engaged_man_woman.insert(1, 1);
+        let mut engaged_man_woman = HashMap::from([(0, 0), (1, 1)]);
 
         let woman = 0;
         let the_better_man = 2;
@@ -406,7 +398,7 @@ mod tests {
         let mut men_preferences = get_preferences_config_1();
         let women_preferences = get_preferences_config_2();
 
-        let mut engaged_man_woman: HashMap<usize, usize> = HashMap::new();
+        let mut engaged_man_woman = HashMap::new();
         let unengaged_men = get_unengaged_men(&men_preferences, &engaged_man_woman);
         let proposals = create_proposals(&men_preferences, unengaged_men);
         println!("proposals: {:?}", proposals);
@@ -447,9 +439,6 @@ mod tests {
         assert_eq!(engaged_man_woman.get(&3), Some(&2));
         assert_eq!(engaged_man_woman.get(&4), Some(&4));
 
-        assert_eq!(
-            get_unengaged_men(&men_preferences, &engaged_man_woman).len(),
-            0
-        );
+        assert!(get_unengaged_men(&men_preferences, &engaged_man_woman).is_empty());
     }
 }
