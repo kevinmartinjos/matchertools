@@ -44,7 +44,7 @@ pub fn gale_shapley<T>(
     input_women_preferences: &HashMap<T, Vec<T>>,
 ) -> HashMap<T, T>
 where
-    T: Eq + Hash + Clone + Copy,
+    T: Eq + Hash + Clone,
 {
     // TODO: Add validations for the input
     let mut men_preferences = HashMap::new();
@@ -56,13 +56,13 @@ where
     let men_reference_to_usize: HashMap<_, _> = input_men_preferences
         .keys()
         .enumerate()
-        .map(|(idx, man)| (*man, idx))
+        .map(|(idx, man)| (man.to_owned(), idx))
         .collect();
 
     let women_reference_to_usize: HashMap<_, _> = input_women_preferences
         .keys()
         .enumerate()
-        .map(|(idx, woman)| (*woman, idx))
+        .map(|(idx, woman)| (woman.to_owned(), idx))
         .collect();
 
     for (man, women) in input_men_preferences.iter() {
@@ -96,12 +96,12 @@ where
 
 fn get_reference_from_usize<T>(references: &HashMap<T, usize>, value: usize) -> Option<T>
 where
-    T: Eq + Hash + Clone + Copy,
+    T: Eq + Hash + Clone,
 {
     references
         .iter()
         .find(|(_, &v)| v == value)
-        .map(|(k, _)| *k)
+        .map(|(k, _)| k.to_owned())
 }
 /// You better go read the algorithm on wikipedia: https://en.wikipedia.org/wiki/Stable_marriage_problem
 /// ranks are indexed from zero
