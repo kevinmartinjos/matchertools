@@ -16,13 +16,13 @@ Exposes an API for the following:
         let mut men_preferences= HashMap::new();
         let mut women_preferences = HashMap::new();
 
-        men_preferences.insert(&"julius", vec![&"cleopatra", &"boudica", &"nefertiti"]);
-        men_preferences.insert(&"antony", vec![&"cleopatra", &"nefertiti", &"boudica"]);
-        men_preferences.insert(&"vercingetorix", vec![&"boudica", &"nefertiti", &"cleopatra"]);
+        men_preferences.insert("julius", vec!["cleopatra", "boudica", "nefertiti"]);
+        men_preferences.insert("antony", vec!["cleopatra", "nefertiti", "boudica"]);
+        men_preferences.insert("vercingetorix", vec!["boudica", "nefertiti", "cleopatra"]);
 
-        women_preferences.insert(&"cleopatra", vec![&"julius", &"antony", &"vercingetorix"]);
-        women_preferences.insert(&"boudica", vec![&"vercingetorix", &"antony", &"julius"]);
-        women_preferences.insert(&"nefertiti", vec![&"julius", &"vercingetorix", &"antony"]);
+        women_preferences.insert("cleopatra", vec!["julius", "antony", "vercingetorix"]);
+        women_preferences.insert("boudica", vec!["vercingetorix", "antony", "julius"]);
+        women_preferences.insert("nefertiti", vec!["julius", "vercingetorix", "antony"]);
 
         let engaged_man_woman =
                 matchertools::gale_shapley(&men_preferences, &women_preferences);

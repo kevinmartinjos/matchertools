@@ -2,7 +2,7 @@
 name = "matchertools"
 version = "0.1.1"
 authors = ["kevin"]
-edition = "2018"
+edition = "2021"
 homepage = "https://github.com/lonesword/matchertools"
 repository = "https://github.com/lonesword/matchertools"
 description = "Implements the Gale-Shapley algorithm and exposes it as an API"
